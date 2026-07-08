@@ -1,0 +1,20 @@
+run:
+  output_root: runs
+  run_id_prefix: demo
+
+synthetic:
+  random_seed: 41
+  start_time: "2026-01-01T00:00:00Z"
+  duration_seconds: 7200
+  feed_a_events: 900
+  feed_b_events: 1150
+  episode_count: 18
+  pre_window_seconds: 300
+  post_window_seconds: 600
+  feed_b_delay_seconds: 12
+  response_amplitude: 1.2
+
+model:
+  test_fraction: 0.30
+  target_response_threshold: 0.35
+  random_seed: 41

@@ -1,0 +1,38 @@
+.env
+.env.*
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+build/
+dist/
+*.egg-info/
+
+# Generated demo outputs. Keep the public branch source-only by default.
+runs/
+
+# Local editor and OS noise.
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Prevent accidental data or model dumps.
+*.csv
+*.parquet
+*.jsonl
+*.db
+*.duckdb
+*.sqlite
+*.pkl
+*.joblib
+*.bin
+*.onnx
+
+# Allow source-controlled fixtures/docs if explicitly needed later.
+!requirements.txt
