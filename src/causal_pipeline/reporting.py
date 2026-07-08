@@ -27,6 +27,22 @@ def write_demo_report(
     row_count_lines = "\n".join(f"- {name}: {count}" for name, count in sorted(row_counts.items()))
     fallback = model_metrics.get("fallback_reason") or "No fallback was needed."
 
+    cv = model_metrics.get("embargoed_cv") or {}
+    if cv.get("status") == "ok":
+        fold_lines = "\n".join(
+            f"- fold {r['fold']}: train_rows={r['train_rows']}, test_rows={r['test_rows']}, "
+            f"embargo_rows={r['embargo_rows']}, auc={r['auc']}"
+            for r in cv.get("folds", [])
+        )
+        ci = cv.get("auc_ci") or {}
+        cv_block = (
+            f"{fold_lines}\n\n"
+            f"Fold AUC bootstrap 95% CI: mean={ci.get('mean')}, "
+            f"lower={ci.get('lower')}, upper={ci.get('upper')} (n_folds={ci.get('n')})."
+        )
+    else:
+        cv_block = f"Embargoed CV was skipped ({cv.get('reason', 'unavailable')})."
+
     text = f"""# Demo Report
 
 ## Run
@@ -79,6 +95,12 @@ The `rebound` cohort is synthetic by construction and is included to make the tr
 - fallback: {fallback}
 
 The modelling stage is included as an evaluation scaffold, not as a performance claim. In the public synthetic demo, the baseline is intentionally simple and illustrative. Metric values are run artefacts rather than selling points.
+
+## Embargoed Temporal Cross-Validation
+
+Each fold trains only on rows strictly earlier than its test block, with an embargo gap of rows withheld immediately before the test window so no time-adjacent row leaks into training. Fold AUCs are summarised with a percentile bootstrap confidence interval.
+
+{cv_block}
 
 ## Limitations
 

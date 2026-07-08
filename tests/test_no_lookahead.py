@@ -1,6 +1,6 @@
-from portfolio_case.pipeline import build_asof_alignment, normalise_feeds
-from portfolio_case.synthetic_data import generate_synthetic_feeds
-from portfolio_case.validation import validate_asof_no_lookahead
+from causal_pipeline.pipeline import build_asof_alignment, normalise_feeds
+from causal_pipeline.synthetic_data import generate_synthetic_feeds
+from causal_pipeline.validation import validate_asof_no_lookahead
 
 
 def _config() -> dict:

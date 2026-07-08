@@ -3,9 +3,9 @@ requires = ["setuptools>=69", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "portfolio-methodology-case-study"
+name = "causal-event-pipeline-demo"
 version = "0.1.0"
-description = "Synthetic methodology case study for causal event-data pipelines."
+description = "Synthetic methodology demo for causal event-data pipelines."
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
@@ -18,11 +18,11 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-test = ["pytest>=8.0"]
+test = ["pytest>=8.0", "ruff>=0.5"]
 lightgbm = ["lightgbm>=4.0"]
 
 [project.scripts]
-portfolio-case = "portfolio_case.cli:main"
+causal-pipeline = "causal_pipeline.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
@@ -31,3 +31,14 @@ where = ["src"]
 addopts = "-q"
 testpaths = ["tests"]
 pythonpath = ["src"]
+
+[tool.ruff]
+line-length = 140
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.ruff.lint.per-file-ignores]
+# The report body is long-form prose held in a single f-string per paragraph.
+"src/causal_pipeline/reporting.py" = ["E501"]

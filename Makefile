@@ -1,11 +1,14 @@
 PYTHON ?= python
 
-.PHONY: demo test clean
+.PHONY: demo test lint clean
 
 demo:
-	$(PYTHON) -m portfolio_case.cli run --config configs/demo.yaml
+	$(PYTHON) -m causal_pipeline.cli run --config configs/demo.yaml
 
-test:
+lint:
+	$(PYTHON) -m ruff check src tests
+
+test: lint
 	$(PYTHON) -m pytest
 
 clean:

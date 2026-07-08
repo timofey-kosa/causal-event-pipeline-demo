@@ -1,4 +1,4 @@
-from portfolio_case.pipeline import (
+from causal_pipeline.pipeline import (
     build_asof_alignment,
     build_episodes,
     build_post_entry_tape,
@@ -6,8 +6,8 @@ from portfolio_case.pipeline import (
     generate_features,
     normalise_feeds,
 )
-from portfolio_case.synthetic_data import generate_synthetic_feeds
-from portfolio_case.validation import (
+from causal_pipeline.synthetic_data import generate_synthetic_feeds
+from causal_pipeline.validation import (
     validate_no_outcome_feature_leakage,
     validate_post_entry_tape,
     validate_pre_entry_tape,

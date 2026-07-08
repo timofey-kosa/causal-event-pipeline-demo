@@ -3,7 +3,7 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-from portfolio_case.pipeline import run_pipeline
+from causal_pipeline.pipeline import run_pipeline
 
 
 def build_parser() -> argparse.ArgumentParser:

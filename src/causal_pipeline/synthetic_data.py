@@ -29,7 +29,10 @@ def _episode_schedule(config: dict, rng: np.random.Generator) -> pd.DataFrame:
     base_offsets = np.linspace(start, stop, count, dtype=np.int64)
     jitter = rng.integers(-20_000, 20_000, size=count)
     offsets = np.clip(base_offsets + jitter, start, stop)
+    # Scatter cohort labels across time so any contiguous time block carries a
+    # class mix; strict cyclic order would leave whole CV folds single-class.
     cohorts = np.resize(np.array(["rebound", "drift", "steady"], dtype=object), count)
+    rng.shuffle(cohorts)
     return pd.DataFrame(
         {
             "episode_id": [f"episode_{idx:03d}" for idx in range(count)],

@@ -26,6 +26,10 @@ Pre-entry rows must be strictly before the event timestamp. Post-entry rows must
 
 The baseline model uses earlier episodes for training and later episodes for testing. This avoids random shuffling across time, which can overstate performance in event-response settings.
 
+## Embargoed Temporal Cross-Validation
+
+Beyond a single train/test split, the model is evaluated across expanding-window temporal folds. Each fold trains only on rows strictly earlier than its test block, and an embargo gap of rows immediately before the test window is withheld from training so that no row bordering the test window in time can leak into the fit. Per-fold AUCs are summarised with a percentile bootstrap confidence interval, so the reported metric carries an uncertainty band rather than a single point value. Both pieces live in `causal_pipeline.temporal_cv` and are covered directly by `tests/test_temporal_cv.py`.
+
 ## Checksum Freeze
 
 The freeze step writes a manifest, config snapshot, and SHA-256 checksums for key outputs. This gives each run an auditable record and makes accidental artefact mutation visible.

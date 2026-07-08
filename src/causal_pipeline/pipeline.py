@@ -8,18 +8,18 @@ from typing import Any
 import pandas as pd
 import yaml
 
-from portfolio_case.analysis import (
+from causal_pipeline.analysis import (
     plot_cohort_outcomes,
     plot_pre_post_tape,
     plot_rebound_pattern,
     write_cohort_summary,
 )
-from portfolio_case.freeze import freeze_run
-from portfolio_case.logging_utils import RunLogger
-from portfolio_case.modelling import train_baseline_model
-from portfolio_case.reporting import write_demo_report
-from portfolio_case.synthetic_data import SyntheticBundle, generate_synthetic_feeds
-from portfolio_case.validation import (
+from causal_pipeline.freeze import freeze_run
+from causal_pipeline.logging_utils import RunLogger
+from causal_pipeline.modelling import train_baseline_model
+from causal_pipeline.reporting import write_demo_report
+from causal_pipeline.synthetic_data import SyntheticBundle, generate_synthetic_feeds
+from causal_pipeline.validation import (
     ValidationResult,
     validate_asof_no_lookahead,
     validate_event_tape,
@@ -28,7 +28,6 @@ from portfolio_case.validation import (
     validate_post_entry_tape,
     validate_pre_entry_tape,
 )
-
 
 PIPELINE_STAGES = [
     "generate_synthetic_feeds",

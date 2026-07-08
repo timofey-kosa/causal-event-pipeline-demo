@@ -1,6 +1,6 @@
 import json
 
-from portfolio_case.freeze import freeze_run, verify_checksums
+from causal_pipeline.freeze import freeze_run, verify_checksums
 
 
 def test_freeze_manifest_and_checksums(tmp_path) -> None:

@@ -1,7 +1,7 @@
 import pandas as pd
 import pytest
 
-from portfolio_case.validation import ValidationError, validate_feed_contract
+from causal_pipeline.validation import ValidationError, validate_feed_contract
 
 
 def _valid_feed() -> pd.DataFrame:
