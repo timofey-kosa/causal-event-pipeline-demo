@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Standing Upstream</title>
+<style>
+:root{
+  --bg:#faf8f4; --panel:#f2eee7; --ink:#24221f; --ink2:#6d675e; --ink3:#8d867b;
+  --rule:#e2dbcf; --accent:#9a5a24; --pos:#3c6b4f; --neg:#9c4038; --cost:#8a7f6d;
+  --c1:#9a5a24; --c2:#215f9e;
+  --sans:-apple-system,"Segoe UI",Roboto,"Helvetica Neue",sans-serif;
+  --mono:ui-monospace,"Cascadia Mono",Consolas,"DejaVu Sans Mono",monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){--bg:#161513; --panel:#1e1d1a; --ink:#e6e1d8; --ink2:#a09a94; --ink3:#857e73;
+        --rule:#33302b; --accent:#cf8a4e; --pos:#79ad8b; --neg:#d08078; --cost:#8f8778;
+        --c1:#c4803f; --c2:#4b9ad4;}
+}
+:root[data-theme="dark"]{--bg:#161513; --panel:#1e1d1a; --ink:#e6e1d8; --ink2:#a09a94; --ink3:#857e73;
+        --rule:#33302b; --accent:#cf8a4e; --pos:#79ad8b; --neg:#d08078; --cost:#8f8778;
+        --c1:#c4803f; --c2:#4b9ad4;}
+*{box-sizing:border-box}
+html{background:var(--bg)}
+body{background:var(--bg); color:var(--ink); font-family:var(--sans); font-size:16px;
+     line-height:1.65; margin:0; padding:3.5rem 1.5rem 6rem; -webkit-font-smoothing:antialiased}
+.wrap{max-width:46rem; margin:0 auto}
+h1{font-size:1.5rem; line-height:1.3; font-weight:600; letter-spacing:-.01em; margin:0 0 .4rem}
+h2{font-size:1.05rem; font-weight:600; margin:3.2rem 0 .9rem; padding-top:1.1rem; border-top:1px solid var(--rule);
+   text-wrap:balance}
+h2 .n{color:var(--accent); font-family:var(--mono); font-size:.85em; margin-right:.55rem}
+h3{font-size:.95rem; font-weight:600; margin:1.9rem 0 .5rem}
+p{margin:0 0 1rem}
+.lede{color:var(--ink2); margin-bottom:1.6rem}
+.meta{font-family:var(--mono); font-size:.78rem; color:var(--ink3); margin-bottom:2.4rem; line-height:1.7}
+em{font-style:normal; color:var(--accent)}
+.num{font-family:var(--mono); font-variant-numeric:tabular-nums}
+.pos{color:var(--pos)} .neg{color:var(--neg)}
+.note{color:var(--ink2); font-size:.9rem}
+code{font-family:var(--mono); font-size:.9em; background:var(--panel); padding:.05em .3em; border-radius:2px}
+.u{font-family:var(--mono); font-size:.8em; color:var(--accent); white-space:nowrap}
+
+.box{background:var(--panel); border-left:2px solid var(--accent); padding:.9rem 1.1rem; margin:1.4rem 0; font-size:.93rem}
+.box p:last-child,.box ul:last-child{margin-bottom:0}
+.quiet{border-left-color:var(--rule)}
+/* self-criticism — deliberately separable; deleting any .stone leaves the narrative intact */
+.stone{border:1px dashed var(--rule); padding:.75rem 1rem; margin:1.3rem 0; font-size:.88rem; color:var(--ink2)}
+.stone p:last-child{margin-bottom:0}
+.stone .tag{display:block; font-family:var(--mono); font-size:.68rem; letter-spacing:.08em;
+            text-transform:uppercase; color:var(--ink3); margin-bottom:.4rem}
+
+/* the rung verdict — one per section, same shape every time */
+.rv{display:grid; grid-template-columns:auto 1fr; gap:.35rem 1rem; margin:1.5rem 0 .4rem;
+    padding-top:.8rem; border-top:1px solid var(--rule); font-size:.92rem}
+.rv dt{font-family:var(--mono); font-size:.7rem; letter-spacing:.07em; text-transform:uppercase;
+       color:var(--ink3); padding-top:.28rem; white-space:nowrap}
+.rv dd{margin:0}
+
+/* tables: scroll rather than compress — columns never overlap */
+.scroll{overflow-x:auto; -webkit-overflow-scrolling:touch; margin:1.2rem 0 1.4rem}
+.scroll table{margin:0}
+table{width:100%; min-width:34rem; border-collapse:collapse; font-size:.87rem; table-layout:auto}
+th{text-align:left; font-weight:600; color:var(--ink2); font-size:.74rem; letter-spacing:.05em;
+   text-transform:uppercase; padding:0 1rem .45rem 0; border-bottom:1px solid var(--rule); vertical-align:bottom}
+td{padding:.45rem 1rem .45rem 0; border-bottom:1px solid var(--rule); vertical-align:top}
+th:last-child,td:last-child{padding-right:0}
+td.v,th.v{text-align:right; font-family:var(--mono); font-variant-numeric:tabular-nums; white-space:nowrap}
+tr:last-child td{border-bottom:none}
+tr.hi td{background:var(--panel)}
+
+/* figures — inline SVG drawn to scale, no libraries */
+figure{margin:1.5rem 0 1.6rem}
+.figw{overflow-x:auto}
+svg.fig{display:block; width:100%; min-width:30rem; height:auto}
+svg.fig .g{stroke:var(--rule); stroke-width:1}
+svg.fig .zero{stroke:var(--ink3); stroke-width:1}
+svg.fig .ev{stroke:var(--accent); stroke-width:1; stroke-dasharray:3 3}
+svg.fig .mark{stroke:var(--cost); stroke-width:1; stroke-dasharray:2 3}
+svg.fig .l0{fill:none; stroke:var(--ink3); stroke-width:1.6}
+svg.fig .l1{fill:none; stroke:var(--c1); stroke-width:2}
+svg.fig .l2{fill:none; stroke:var(--c2); stroke-width:2}
+svg.fig .st0{fill:none; stroke:var(--ink3); stroke-width:1.6}
+svg.fig .st1{fill:none; stroke:var(--c1); stroke-width:2}
+svg.fig .dash{stroke-dasharray:5 4}
+svg.fig .band1{fill:var(--c1); opacity:.15; stroke:none}
+svg.fig .d0{fill:var(--ink3); stroke:var(--bg); stroke-width:1.5}
+svg.fig .d1{fill:var(--c1); stroke:var(--bg); stroke-width:1.5}
+svg.fig .d2{fill:var(--c2); stroke:var(--bg); stroke-width:1.5}
+svg.fig .whisk{stroke:var(--ink3); stroke-width:1.5}
+svg.fig .cap{stroke:var(--ink3); stroke-width:1.5}
+svg.fig .arrow{fill:var(--ink3)}
+svg.fig .tk{fill:var(--ink3); font-family:var(--mono); font-size:11px}
+svg.fig .tkr{fill:var(--ink3); font-family:var(--mono); font-size:10px}
+svg.fig .axl{fill:var(--ink2); font-family:var(--sans); font-size:11.5px}
+svg.fig .dl0,svg.fig .dl1,svg.fig .dl2{fill:var(--ink); font-family:var(--sans); font-size:11.5px}
+svg.fig .rowh{fill:var(--ink); font-family:var(--sans); font-size:11.5px; font-weight:600}
+svg.fig .rowl{fill:var(--ink2); font-family:var(--sans); font-size:11px}
+svg.fig .rowv{fill:var(--ink3); font-family:var(--mono); font-size:10.5px}
+.leg{font-size:.8rem; color:var(--ink2); margin:.1rem 0 .3rem; display:flex; flex-wrap:wrap; gap:.2rem 1.2rem}
+.leg span{display:inline-flex; align-items:center; gap:.4rem}
+.leg i{display:inline-block; width:15px; height:0; border-top-width:2px; border-top-style:solid}
+.leg .k1 i{border-color:var(--c1)} .leg .k2 i{border-color:var(--c2)}
+.leg .k0 i{border-color:var(--ink3); border-top-style:dashed}
+figcaption{font-size:.82rem; color:var(--ink3); margin:.35rem 0 0; line-height:1.55}
+
+/* formula cards — carried over from the FINAL-2026 report, where they rendered reliably */
+.fcard{border:1px solid var(--rule); border-radius:6px; padding:.15rem 1.1rem 1rem;
+       margin:1.4rem 0; background:var(--panel)}
+.fcard h4{font-size:.9rem; font-weight:600; margin:1.1rem 0 .55rem; color:var(--ink)}
+pre.fm{background:var(--bg); border:1px solid var(--rule); border-radius:4px;
+       padding:.7rem 1rem; overflow-x:auto; font-family:var(--mono); font-size:.8rem;
+       line-height:1.55; margin:0 0 .8rem; white-space:pre; color:var(--ink)}
+.fnp{font-size:.88rem; color:var(--ink2); margin:0; line-height:1.6}
+.fnp b{color:var(--ink); font-weight:600}
+
+ul{margin:0 0 1rem; padding-left:1.15rem} li{margin-bottom:.45rem}
+a{color:var(--accent)}
+a:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+.foot{margin-top:4rem; padding-top:1.2rem; border-top:1px solid var(--rule);
+      font-size:.82rem; color:var(--ink3); font-family:var(--mono); line-height:1.75}
+@media print{body{background:#fff;color:#000;padding:0;font-size:10.5pt} h2{page-break-after:avoid}
+             .scroll,figure{page-break-inside:avoid} table{min-width:0} svg.fig{min-width:0}}
+@media (max-width:640px){body{padding:2rem 1rem 4rem}}
+
+svg.fig .l3{fill:none; stroke:var(--ink2); stroke-width:1.8}
+svg.fig .d3{fill:var(--ink2); stroke:var(--bg); stroke-width:1.5}
+.leg .k3 i{border-color:var(--ink2)}
+.card{border:1px solid var(--rule); border-radius:6px; background:var(--panel); padding:.75rem 1.1rem 1rem; margin:1.4rem 0; font-size:.92rem}
+.card .ct{font-family:var(--mono); font-size:.7rem; letter-spacing:.07em; color:var(--accent); margin-bottom:.15rem}
+.card h4{font-size:.98rem; font-weight:600; margin:0 0 .6rem; line-height:1.4}
+.card dl{display:grid; grid-template-columns:5rem minmax(0,1fr); gap:.35rem .9rem; margin:0}
+.card dt{font-family:var(--mono); font-size:.66rem; letter-spacing:.06em; text-transform:uppercase; color:var(--ink3); padding-top:.28rem}
+.card dd{margin:0}
+.card .scroll{margin:.2rem 0 .7rem}
+.card table{background:var(--bg); min-width:0; font-size:.8rem}
+.card td,.card th{padding-right:.7rem}
+@media (max-width:640px){.card dl{grid-template-columns:minmax(0,1fr)} .card dt{padding-top:.5rem}}
+@page{size:A4; margin:14mm 14mm 16mm}
+@media print{
+  .scroll{page-break-inside:auto; break-inside:auto}
+  .rv,figure,.box,pre.fm,tr,.card dt{break-inside:avoid; page-break-inside:avoid}
+  h2,h3,h4,.card .ct,.card dt{break-after:avoid; page-break-after:avoid}
+  h2{margin-top:1.4rem}
+  figure{margin:.8rem 0}
+  svg.fig{max-height:62mm; width:auto; max-width:100%; margin:0 auto}
+  .card,.card table{background:#f6f3ee}
+  a{color:#000}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Standing Upstream</h1>
+<p class="lede">A research programme on one recurring dislocation — Uniswap V3 on Base against the Binance perpetual, ETH/USDC — told as it unfolded: a trade idea, tested and narrowed in stages, each stage pointing one step further upstream toward whatever was actually moving the market.</p>
+<p class="meta">ETH/USDC · Uniswap V3 on Base ↔ Binance USD-M perpetual · research 2026-05-06 → 2026-09-16<br>
+All returns gross, in basis points · holdout 2025-09 onward sealed and unread</p>
+
+<h2><span class="n">00</span>How this started, and where it stands</h2>
+
+<p>The starting idea was simple: when a Uniswap pool and its matching Binance perpetual disagree by more than a few basis points, something has not caught up, and a real move is often already under way. Trade the gap.</p>
+
+<p>The first real work was sizing both legs of that idea, and it retired one of them immediately. Ten seconds after a dislocation opens, the Uniswap leg has moved <span class="num pos">+12.84 bp</span> and the Binance leg <span class="num pos">+0.25 bp</span> — fifty to one. The dislocation is the pool catching up with Binance, not two markets converging on each other, and closing it on the DEX side is a latency race already won by someone else: Wu, Sui, Thiery and Pai (arXiv:2507.13023) measure $233.8 m captured across 7.2 m CEX–DEX arbitrages on Ethereum, with the top three searchers alone taking 73 → 90 % of that flow by 2025. That leg was set aside — not because it has no value, but because it is won by infrastructure speed, not by analysis.</p>
+
+<p>What was left was the Binance leg: could the dislocation say anything about what Binance was about to do? Answering that meant understanding what actually produces a dislocation, and every layer of that understanding pushed the question further upstream. A dislocation turned out to be a symptom of Binance taker flow (R1); that flow turned out to be a symptom of continuation in the Binance price itself, which is real but directionless at every resolution measured (R2); the order book one level down carried the same shape — a little information about size, almost none about direction, and gone within milliseconds (R3); and once a position was open, no exit rule and no sequence model ever recovered direction from the price path alone (R4). The same result kept recurring in a different costume:</p>
+
+<pre class="fm">spread  →  taker flow  →  Binance's price  →  the book  →  forced liquidations
+  R1           R1               R2               R3                R5</pre>
+
+<p><strong>amplitude is measurable at every rung; direction is not — until the chain runs out at the one place direction is not read off the market but created by it.</strong> A forced liquidation is, by construction, a one-sided order with a known side. That is where this stands now (R5), and it is the first place the amplitude this programme kept finding has something to attach a direction to, if the price levels those forced orders come from can be located in advance.</p>
+
+<p>That last piece — a map of where leveraged positions sit, priced against the current market to say when and how hard a level gets hit — already exists as a product category: liquidation heatmaps, built on assumed leverage brackets, are a standard feature of crypto trading terminals. The version built and tested here (R5) uses that same construction and gets the same non-result: fixed leverage bands place liquidations no better than a plain volume profile. The question this programme is now working (X4) is whether replacing assumed leverage with leverage estimated from data, and a density with a probability of reaching a level, turns a descriptive map into a timing signal — without competing on latency at all.</p>
+
+<ul>
+<li><strong>Cards.</strong> Every experiment below is a card: question, setup, universe, features, result.</li>
+<li><strong>Order.</strong> Experiments on one question run from fewer inputs to more; the fuller model has to confirm the lighter one.</li>
+<li><strong>Evidence.</strong> A result counts when its 95 % day-clustered bootstrap interval excludes zero (0.5 for an AUC). Otherwise it is given as a number with its interval, not as a claim.</li>
+<li><strong>Inputs.</strong> No model receives a direction-carrying ratio (a signed quantity divided by its own magnitude); numerator and denominator go in separately — the defect register shows what that rule cost to learn the hard way.</li>
+</ul>
+
+<h2><span class="n">01</span>Data, clocks and universes</h2>
+
+<div class="scroll"><table>
+<tr><th>tape</th><th>what it holds</th><th>resolution</th><th>span</th></tr>
+<tr><td>Uniswap V3 swaps, Base</td><td>pool price per swap</td><td>block time; ~2 s blocks built from 200 ms flashblocks</td><td>2023-09 → 2026-05</td></tr>
+<tr><td>Binance aggTrades, signed</td><td>taker orders with their side</td><td>milliseconds, per event</td><td>2024-01 → 2026-05</td></tr>
+<tr><td><code>spread_series</code></td><td><code>1e4·(p_bin − p_uni)/p_bin</code>, event-time join of both</td><td>every event of either venue</td><td>29 months</td></tr>
+<tr><td>Binance bookTicker archive</td><td>best bid, best ask, quantities at both</td><td>per event, 3 ms median gap</td><td>2024-01-05 → 2024-03-30</td></tr>
+<tr><td>CoinAPI L2 and BBO</td><td>order book by level; its top</td><td>100 ms frames, receipt stamps</td><td>191 days, 2024-11-26 → 2025-08-29</td></tr>
+<tr><td>CoinAPI liquidations</td><td>minute bars; trade time <code>T</code> and price of each order; no side</td><td>minute bars, <code>T</code> in ms</td><td>the same 191 days</td></tr>
+<tr><td>Binance <code>metrics</code> archive</td><td>open interest, positioning ratios</td><td>5 minutes, no missing days</td><td>2024-01-04 → 2025-08-29</td></tr>
+</table></div>
+
+<p><strong>One clock for every experiment.</strong> Binance stamps trades in milliseconds and many share one; prints are ordered by time, then by the exchange's trade id, so "the last print" is the exchange's last.</p>
+
+<div class="scroll"><table>
+<tr><th>event</th><th>usable from</th></tr>
+<tr><td>a Binance print</td><td>+15 ms</td></tr>
+<tr><td>a Uniswap price, inside the spread</td><td>block time + 160 ms</td></tr>
+<tr><td>a spread crossing made by a Binance print</td><td>+15 ms</td></tr>
+<tr><td>a spread crossing made by a new Uniswap price</td><td>block time + 160 ms</td></tr>
+<tr><td>a market order's fill</td><td>+40 ms after the decision</td></tr>
+</table></div>
+<p class="note">Delays round up to the data step. The CoinAPI book arrives in 100 ms frames, so on that tape nothing finer than 100 ms is measured.</p>
+
+<p><strong>Universes, defined once.</strong> A fold is a calendar window: fold 1 is 2024-11-26 → 2025-02-13, fold 2 is 2025-02-14 → 2025-04-08. An episode opens when the spread rises above 6 bp and closes when it falls below 3 bp.</p>
+
+<div class="scroll"><table>
+<tr><th>id</th><th>what it is</th><th class="v">n</th><th>span</th><th>used in</th></tr>
+<tr><td><strong>UA</strong></td><td>anchors of three independent kinds, both directions: A1 spread crossings; A2 bursts of signed Binance volume; A3 departures of the Binance price from its own 60 s mean by more than its own volatility — no spread term</td><td class="v">fold 1: 141,688 / 15,052 / 57,455<br>fold 2: 122,007 / 39,579 / 73,200</td><td>folds 1–2, every calendar day (80 + 54)</td><td>R2</td></tr>
+<tr><td><strong>UB</strong></td><td>8 bp jumps of the Binance mid, and episode opens, on the native bookTicker tape</td><td class="v">6,401 jumps<br>5,859 opens</td><td>2024-01-05 → 2024-04-01, 87 days</td><td>R3</td></tr>
+<tr><td><strong>U2</strong></td><td>episodes with an out-of-fold pre-entry score, split into five equal chronological folds of 51,176 (fold 0 trains only)</td><td class="v">255,881</td><td>2024-08 → 2025-08</td><td>R1, R4</td></tr>
+<tr><td><strong>U3</strong></td><td>U2 episodes above the entry gate — the 0.90 quantile of the score over earlier folds</td><td class="v">28,467</td><td>folds 1–4</td><td>R4</td></tr>
+<tr><td><strong>U5</strong></td><td>fold-1 entries of U3 with a reconstructed CoinAPI book</td><td class="v">9,817</td><td>fold 1, 61 days</td><td>R3, R4</td></tr>
+<tr><td><strong>UL</strong></td><td>liquidations at the trade time <code>T</code> of each minute's first order, with matched quiet instants</td><td class="v">19,709 / 150,154</td><td>191 CoinAPI days</td><td>R5</td></tr>
+<tr><td><strong>UH</strong></td><td>fold-1 A1 breaches, split by liquidation background</td><td class="v">5,658</td><td>63 days</td><td>R5</td></tr>
+<tr><td><strong>UM</strong></td><td>open interest and trades for building liquidation maps; liquidations to test them</td><td class="v">604 days</td><td>2024-01-04 → 2025-08-29</td><td>R5</td></tr>
+</table></div>
+
+<h2><span class="n">R1</span>Is the spread just Binance, seen late?</h2>
+
+<p>The cheapest deflation of the whole programme: the spread is Binance seen again a step later, and every study built on it was a Binance study in disguise. Three measurements take that apart — what the flow does around a breach, which venue actually moves, and what a ranker of episodes really reads.</p>
+
+<div class="card"><div class="ct">R1·1</div><h4>Taker flow around a breach</h4><dl>
+<dt>Question</dt><dd>What does Binance taker flow do in the seconds before and after the spread breaks out?</dd>
+<dt>Setup</dt><dd>Taker imbalance in half-second bins from −105 s to +30 s around each episode open, against hour-matched random instants.</dd>
+<dt>Universe</dt><dd>Fold 1, 79 days: 5,574 episode opens, 5,574 controls. Background split on UH.</dd>
+<dt>Features</dt><dd>Signed and total taker volume, trade rate.</dd>
+<dt>Result</dt><dd>Imbalance stays inside [−0.070, +0.006] until 5 s before the breach, reaches +0.605 at −2.5 s and +0.657 in the last half-second, and is back to +0.027 by +1.5 s; trade rate 10.8/s → 34.2/s → 13.7/s. <strong>A breach is a three-second one-sided flow event, not a build-up.</strong>
+<br>On a quiet background the flow ramps early: +0.165 [+0.012, +0.365] at −5.5 s, +0.797 [+0.240, +0.919] at −2.5 s. With liquidations already known before the breach there is no ramp until −1.5 s (+0.191 [+0.084, +0.421]), and the breach itself is weaker: 48.7 ETH/s against 88.4.
+<br>The side is carried by signed trade counts rather than signed volume (0.664 against 0.635 AUC over 30 s at a 2 s lead, on 11,127 two-sided crossings); volume alone is at chance, 0.510.</dd>
+</dl></div>
+
+<figure>
+<div class="figw"><svg class="fig" viewBox="0 0 720 300" role="img" aria-label="Taker imbalance around a breach"><title>Taker imbalance around a breach</title><desc>Binance taker imbalance for 5574 episode opens and 5574 hour-matched controls over 79 days; flat until five seconds before, peaking at 0.657, back to zero within two seconds after.</desc><line class="g" x1="52.0" y1="224.3" x2="624.0" y2="224.3"/><text class="tk" x="44.0" y="227.8" text-anchor="end">0.0</text><line class="g" x1="52.0" y1="171.4" x2="624.0" y2="171.4"/><text class="tk" x="44.0" y="174.9" text-anchor="end">0.2</text><line class="g" x1="52.0" y1="118.5" x2="624.0" y2="118.5"/><text class="tk" x="44.0" y="122.0" text-anchor="end">0.4</text><line class="g" x1="52.0" y1="65.7" x2="624.0" y2="65.7"/><text class="tk" x="44.0" y="69.2" text-anchor="end">0.6</text><text class="tk" x="52.0" y="272.0" text-anchor="middle">-60</text><text class="tk" x="147.3" y="272.0" text-anchor="middle">-45</text><text class="tk" x="242.7" y="272.0" text-anchor="middle">-30</text><text class="tk" x="338.0" y="272.0" text-anchor="middle">-15</text><text class="tk" x="401.6" y="272.0" text-anchor="middle">-5</text><text class="tk" x="433.3" y="272.0" text-anchor="middle">0</text><text class="tk" x="465.1" y="272.0" text-anchor="middle">+5</text><text class="tk" x="528.7" y="272.0" text-anchor="middle">+15</text><text class="tk" x="624.0" y="272.0" text-anchor="middle">+30</text><text class="axl" x="338.0" y="296.0" text-anchor="middle">seconds relative to the breach</text><text class="axl" x="8.0" y="16.0">taker imbalance</text><line class="zero" x1="52.0" y1="224.3" x2="624.0" y2="224.3"/><line class="ev" x1="433.3" y1="26.0" x2="433.3" y2="256.0"/><polygon class="band1" points="55.2,217.8 61.5,208.4 67.9,221.7 74.2,224.8 80.6,229.6 87.0,226.5 93.3,225.9 99.7,231.4 106.0,220.8 112.4,225.1 118.7,223.1 125.1,225.9 131.4,241.2 137.8,215.4 144.2,217.5 150.5,230.1 156.9,209.9 163.2,226.3 169.6,233.4 175.9,216.3 182.3,218.1 188.6,230.3 195.0,231.7 201.4,226.2 207.7,222.9 214.1,200.7 220.4,222.4 226.8,201.7 233.1,216.5 239.5,192.6 245.8,196.0 252.2,219.3 258.6,215.5 264.9,214.4 271.3,211.4 277.6,219.1 284.0,219.5 290.3,159.4 296.7,209.3 303.0,199.3 309.4,224.1 315.8,204.8 322.1,228.7 328.5,219.4 334.8,224.5 341.2,200.8 347.5,197.7 353.9,143.9 360.2,192.8 366.6,210.3 373.0,198.7 379.3,193.7 385.7,205.6 392.0,146.5 398.4,162.7 404.7,179.7 411.1,27.8 417.4,-1.9 423.8,73.9 430.2,2.0 436.5,4.8 442.9,176.5 449.2,163.2 455.6,137.3 461.9,184.7 468.3,152.3 474.6,163.8 481.0,195.9 487.4,211.9 493.7,196.2 500.1,188.0 506.4,207.3 512.8,191.1 519.1,202.9 525.5,205.5 531.8,187.6 538.2,220.1 544.6,205.9 550.9,204.3 557.3,215.9 563.6,195.6 570.0,233.6 576.3,227.0 582.7,194.9 589.0,218.9 595.4,201.8 601.8,200.2 608.1,162.8 614.5,197.2 620.8,148.9 620.8,238.3 614.5,238.8 608.1,232.1 601.8,232.8 595.4,258.2 589.0,266.6 582.7,249.1 576.3,260.8 570.0,279.7 563.6,232.9 557.3,250.6 550.9,226.0 544.6,236.0 538.2,253.8 531.8,230.7 525.5,235.4 519.1,230.5 512.8,232.7 506.4,249.6 500.1,243.5 493.7,271.5 487.4,291.0 481.0,225.8 474.6,261.1 468.3,222.1 461.9,262.1 455.6,244.6 449.2,229.3 442.9,243.3 436.5,227.8 430.2,85.4 423.8,155.4 417.4,205.4 411.1,198.5 404.7,232.2 398.4,236.3 392.0,239.8 385.7,244.2 379.3,232.4 373.0,238.9 366.6,233.3 360.2,240.1 353.9,274.1 347.5,244.0 341.2,239.2 334.8,249.7 328.5,239.0 322.1,266.2 315.8,247.2 309.4,261.5 303.0,253.2 296.7,236.1 290.3,254.9 284.0,248.1 277.6,248.7 271.3,251.1 264.9,259.1 258.6,259.2 252.2,282.1 245.8,255.1 239.5,268.2 233.1,247.1 226.8,262.1 220.4,255.7 214.1,244.4 207.7,266.7 201.4,274.8 195.0,277.2 188.6,257.7 182.3,248.3 175.9,262.8 169.6,295.6 163.2,285.3 156.9,249.5 150.5,255.3 144.2,272.7 137.8,269.7 131.4,281.7 125.1,274.0 118.7,259.5 112.4,285.0 106.0,274.7 99.7,283.1 93.3,278.1 87.0,296.8 80.6,272.9 74.2,255.5 67.9,253.4 61.5,262.0 55.2,241.7"/><polyline class="l0 dash" points="55.2,258.7 61.5,205.7 67.9,255.2 74.2,220.8 80.6,223.5 87.0,224.5 93.3,228.7 99.7,206.3 106.0,237.7 112.4,236.0 118.7,235.9 125.1,211.7 131.4,225.0 137.8,236.7 144.2,249.9 150.5,236.1 156.9,249.9 163.2,216.6 169.6,244.5 175.9,274.8 182.3,226.8 188.6,252.8 195.0,266.7 201.4,206.4 207.7,189.8 214.1,218.0 220.4,271.9 226.8,233.7 233.1,254.2 239.5,227.5 245.8,218.7 252.2,270.1 258.6,213.3 264.9,242.7 271.3,259.6 277.6,201.0 284.0,234.3 290.3,222.5 296.7,227.5 303.0,202.2 309.4,204.7 315.8,232.6 322.1,252.6 328.5,247.2 334.8,255.6 341.2,209.7 347.5,244.1 353.9,244.5 360.2,225.0 366.6,267.5 373.0,216.0 379.3,233.7 385.7,207.8 392.0,231.6 398.4,245.9 404.7,230.8 411.1,259.4 417.4,256.5 423.8,207.2 430.2,204.3 436.5,223.4 442.9,203.4 449.2,229.9 455.6,237.3 461.9,223.8 468.3,246.2 474.6,250.3 481.0,238.5 487.4,225.9 493.7,225.9 500.1,236.0 506.4,243.9 512.8,228.2 519.1,249.2 525.5,206.3 531.8,209.7 538.2,249.6 544.6,248.3 550.9,274.1 557.3,223.0 563.6,229.6 570.0,233.1 576.3,213.0 582.7,258.1 589.0,250.6 595.4,236.0 601.8,237.6 608.1,248.2 614.5,232.5 620.8,221.1"/><polyline class="l1" points="55.2,231.0 61.5,244.3 67.9,240.4 74.2,244.9 80.6,257.6 87.0,269.2 93.3,259.1 99.7,262.4 106.0,255.5 112.4,265.2 118.7,247.1 125.1,258.7 131.4,262.5 137.8,249.3 144.2,250.5 150.5,246.5 156.9,234.4 163.2,248.8 169.6,262.1 175.9,234.3 182.3,232.8 188.6,248.4 195.0,246.9 201.4,249.0 207.7,247.9 214.1,229.5 220.4,245.2 226.8,242.1 233.1,235.1 239.5,242.9 245.8,233.4 252.2,259.1 258.6,244.9 264.9,244.0 271.3,236.3 277.6,240.3 284.0,235.6 290.3,216.4 296.7,222.6 303.0,234.8 309.4,246.3 315.8,232.4 322.1,247.0 328.5,231.4 334.8,240.2 341.2,227.1 347.5,230.4 353.9,229.1 360.2,222.6 366.6,222.7 373.0,224.0 379.3,220.0 385.7,230.6 392.0,202.4 398.4,212.6 404.7,215.1 411.1,106.3 417.4,64.3 423.8,112.6 430.2,50.6 436.5,103.9 442.9,217.2 449.2,200.8 455.6,198.0 461.9,227.4 468.3,185.9 474.6,209.9 481.0,212.2 487.4,250.8 493.7,236.5 500.1,224.6 506.4,233.5 512.8,217.5 519.1,211.7 525.5,226.6 531.8,218.3 538.2,241.2 544.6,225.3 550.9,216.8 557.3,239.1 563.6,210.4 570.0,251.0 576.3,238.6 582.7,230.7 589.0,247.6 595.4,239.5 601.8,212.7 608.1,207.2 614.5,210.1 620.8,205.7"/><circle class="d1" cx="430.2" cy="50.6" r="3.5"/><text class="dl1" x="438.2" y="44.6">0.657 at -0.5 s</text><text class="dl1" x="632.0" y="209.7">breach</text><text class="dl0" x="632.0" y="225.1">control</text></svg></div>
+<p class="leg"><span class="k1"><i></i>episode opens (5,574)</span><span class="k0"><i></i>hour-matched controls (5,574)</span></p>
+<figcaption>R1·1. Binance taker imbalance around a spread breach, fold 1, shaded 95 % day-clustered interval. Flat until five seconds before, one-sided for three, gone within two after. Source: <code>artifacts/breach_binance_flow_v1/results.json</code>.</figcaption>
+</figure>
+
+<div class="card"><div class="ct">R1·2</div><h4>Which leg closes the spread</h4><dl>
+<dt>Question</dt><dd>When the spread closes, which venue moves?</dd>
+<dt>Setup</dt><dd>Price change of each leg from the episode open to +10 s.</dd>
+<dt>Universe</dt><dd>Fold 1, 5,574 episode opens.</dd>
+<dt>Result</dt><dd>Uniswap <span class="num">+12.84 bp</span>, Binance <span class="num">+0.25 bp</span>. <strong>The spread is the pool catching up with Binance</strong>, not a two-sided mispricing. The Binance leg earns +0.32 bp by 2 s and −2.01 bp by 60 s.</dd>
+</dl></div>
+
+<div class="card"><div class="ct">R1·3</div><h4>What a ranker of episodes actually reads</h4><dl>
+<dt>Question</dt><dd>Given that the spread has selected an episode, does its shape add anything to ranking the move that follows?</dd>
+<dt>Setup</dt><dd>One model, four nested feature arms; target: maximum excursion within 30 s ≥ 10 bp; out-of-fold AUC.</dd>
+<dt>Universe</dt><dd>U2.</dd>
+<dt>Features</dt><dd>Calendar → + Binance tape → + Uniswap activity → + spread shape.</dd>
+<dt>Result</dt><dd><div class="scroll"><table>
+<tr><th>arm</th><th class="v">features</th><th class="v">AUC</th><th class="v">top decile, mean 30 s excursion</th></tr>
+<tr><td>calendar only</td><td class="v">8</td><td class="v">0.6939</td><td class="v">18.43 bp</td></tr>
+<tr><td>+ Binance tape</td><td class="v">25</td><td class="v">0.7337</td><td class="v">22.46 bp</td></tr>
+<tr><td>+ Uniswap activity</td><td class="v">39</td><td class="v">0.7344</td><td class="v">22.23 bp</td></tr>
+<tr><td>+ spread shape</td><td class="v">52</td><td class="v">0.7353</td><td class="v">22.22 bp</td></tr>
+</table></div>
+Pool mean 9.01 bp. The spread's shape adds +0.0009 [+0.0002, +0.0017] AUC. <strong>The ranking is the clock and the Binance tape.</strong></dd>
+</dl></div>
+
+<div class="box quiet"><p><strong>From the other side of the trade.</strong> Wu, Sui, Thiery and Pai (arXiv:2507.13023) observe CEX–DEX arbitrage on Ethereum from the searchers who capture it: $233.8 m over 7.2 m arbitrages, nearly all under 20 bp gross, with the top three searchers growing from 73 % to about 90 % of the flow by 2025. The pool's late leg is a crowded, well-served trade.</p></div>
+
+<dl class="rv">
+<dt>Verdict</dt><dd>The spread is not Binance seen late — it is the pool arriving late. The move that closes it happens on Uniswap. Binance flow warns about three seconds ahead, and earlier only on a quiet background. What ranks opportunities is the calendar and the Binance tape.</dd>
+</dl>
+<p class="note"><strong>Evidence.</strong> <code>EVD-BREACH-FLOW-NULL</code>; <code>artifacts/breach_binance_flow_v1/results.json</code> and <code>audit_2026-09-14/p14_result.json</code> (background split from <code>T</code>); <code>EVD-VENUE-ABLATION</code>, <code>artifacts/preentry_fat_gross_v1/c1c2/venue_ablation.json</code>.</p>
+
+<h2><span class="n">R2</span>Does the price keep going — and can anything tell which way?</h2>
+
+<p>R1 measures the side of a spread crossing, which is the spread's own threshold. The trader's question is different: once a dislocation is visible, does the Binance price keep moving, and does anything say in which direction? R2 asks it on three anchor kinds, one of which is built from the Binance tape alone, so that the spread has to earn its place on events it did not define.</p>
+
+<div class="card"><div class="ct">R2·1</div><h4>Continuation against a random instant</h4><dl>
+<dt>Question</dt><dd>After an anchor, does the Binance price keep moving in the anchor's direction, and for how long?</dd>
+<dt>Setup</dt><dd>Realised signed move from the fill to each point of a 12-point grid (0.5–60 s), against a 1:1 hour- and sign-matched random instant. The horizon is the last grid point before the first step whose interval covers zero.</dd>
+<dt>Universe</dt><dd>UA, fold 1.</dd>
+<dt>Features</dt><dd>None.</dd>
+<dt>Result</dt><dd>On A1 every step clears zero through 3 s; the next step, 3 → 5 s, is +0.022 [−0.005, +0.050]. <strong>Horizon: 3 s.</strong> Move at 3 s over the random instant: A1 long +0.337, A1 short +0.261, A2 +0.342, A3 +0.235 bp. A1 reaches +0.299 by 3 s and +0.392 by 60 s — <strong>nine tenths of the move arrives in three seconds.</strong></dd>
+</dl></div>
+
+<figure>
+<div class="figw"><svg class="fig" viewBox="0 0 720 320" role="img" aria-label="Continuation arrives in three seconds"><title>Continuation arrives in three seconds</title><desc>Realised signed move after an anchor against a matched random instant, 0 to 30 s, square-root time axis, for spread crossings, flow bursts and Binance-only departures.</desc><line class="g" x1="56" y1="272.0" x2="700" y2="272.0"/><text class="tk" x="48" y="275.5" text-anchor="end">−0.1</text><line class="zero" x1="56" y1="222.8" x2="700" y2="222.8"/><text class="tk" x="48" y="226.3" text-anchor="end">0</text><line class="g" x1="56" y1="173.6" x2="700" y2="173.6"/><text class="tk" x="48" y="177.1" text-anchor="end">+0.1</text><line class="g" x1="56" y1="124.4" x2="700" y2="124.4"/><text class="tk" x="48" y="127.9" text-anchor="end">+0.2</text><line class="g" x1="56" y1="75.2" x2="700" y2="75.2"/><text class="tk" x="48" y="78.7" text-anchor="end">+0.3</text><line class="g" x1="56" y1="26.0" x2="700" y2="26.0"/><text class="tk" x="48" y="29.5" text-anchor="end">+0.4</text><text class="tk" x="173.6" y="288" text-anchor="middle">1 s</text><text class="tk" x="222.3" y="288" text-anchor="middle">2 s</text><text class="tk" x="259.7" y="288" text-anchor="middle">3 s</text><text class="tk" x="318.9" y="288" text-anchor="middle">5 s</text><text class="tk" x="427.8" y="288" text-anchor="middle">10 s</text><text class="tk" x="581.8" y="288" text-anchor="middle">20 s</text><text class="tk" x="700.0" y="288" text-anchor="middle">30 s</text><line class="ev" x1="259.7" y1="26" x2="259.7" y2="272"/><text class="dl0" x="265.7" y="36">3 s horizon</text><polyline class="l1" points="56.0,222.8 139.1,147.1 173.6,119.8 222.3,92.5 259.7,75.5 318.9,62.1 378.0,59.0 427.8,45.2 511.4,38.6 581.8,44.0 700.0,30.1"/><circle class="d1" cx="259.7" cy="75.5" r="3.5"><title>A1 at 3 s: +0.299 bp</title></circle><text class="dl0" x="706.0" y="34.1">A1</text><polyline class="l2" points="56.0,222.8 139.1,137.6 173.6,121.5 222.3,81.1 259.7,54.4 318.9,90.9 378.0,141.0 427.8,121.4 511.4,174.8 581.8,110.3 700.0,125.3"/><circle class="d2" cx="259.7" cy="54.4" r="3.5"><title>A2 at 3 s: +0.342 bp</title></circle><text class="dl0" x="706.0" y="129.3">A2</text><polyline class="l3" points="56.0,222.8 139.1,179.3 173.6,154.5 222.3,123.7 259.7,107.4 318.9,90.6 378.0,91.4 427.8,95.7 511.4,98.4 581.8,105.7 700.0,98.1"/><circle class="d3" cx="259.7" cy="107.4" r="3.5"><title>A3 at 3 s: +0.235 bp</title></circle><text class="dl0" x="706.0" y="102.1">A3</text><polyline class="l0 dash" points="56.0,222.8 139.1,223.9 173.6,222.6 222.3,223.3 259.7,224.4 318.9,221.6 378.0,223.5 427.8,221.4 511.4,214.6 581.8,210.5 700.0,211.5"/><text class="axl" x="60" y="14">bp</text><text class="axl" x="378" y="312" text-anchor="middle">time after the fill (square-root axis)</text></svg></div>
+<p class="leg"><span class="k1"><i></i>A1 spread crossings</span><span class="k2"><i></i>A2 flow bursts</span><span class="k3"><i></i>A3 Binance-only departures</span><span class="k0"><i></i>matched random instant</span></p>
+<figcaption>R2·1. Realised move in the anchor's direction, fold 1. At 3 s: A1 +0.299, A2 +0.342, A3 +0.235 bp; beyond that the paths wander around their 3 s level while the matched instant stays at zero. Source: <code>artifacts/continuation_v1/horizon.json</code>.</figcaption>
+</figure>
+
+<div class="card"><div class="ct">R2·2</div><h4>The direction of continuation: flow against spread</h4><dl>
+<dt>Question</dt><dd>Can Binance flow or the spread say in advance which way continuation goes?</dd>
+<dt>Setup</dt><dd>Label: +4 bp before −4 bp within 3 s. LightGBM, nested in both directions around a common block. Fold 1 out-of-fold over five day blocks; fold 2 scored once by one fit on fold 1.</dd>
+<dt>Universe</dt><dd>UA, folds 1 and 2.</dd>
+<dt>Features</dt><dd>Common: Binance's own returns and realised volatility, regime, calendar. Flow: signed volume and volume, signed count and count, large-trade signed volume and volume, trailing windows. Spread: demeaned level, trailing velocities, RMS, breach geometry.</dd>
+<dt>Result</dt><dd><div class="scroll"><table>
+<tr><th>anchors</th><th>fold</th><th class="v">labelled</th><th class="v">AUC flow</th><th class="v">AUC spread</th><th class="v">AUC both</th></tr>
+<tr><td>A1 crossings</td><td>1</td><td class="v">36,071</td><td class="v">0.4955</td><td class="v">0.5053</td><td class="v">0.5009</td></tr>
+<tr><td>A1 crossings</td><td>2</td><td class="v">36,673</td><td class="v">0.4998</td><td class="v">0.4977</td><td class="v">0.4992</td></tr>
+<tr><td>A2 flow bursts</td><td>1</td><td class="v">3,835</td><td class="v">0.4863</td><td class="v">0.4992</td><td class="v">0.4901</td></tr>
+<tr><td>A2 flow bursts</td><td>2</td><td class="v">11,657</td><td class="v">0.4979</td><td class="v">0.5034</td><td class="v">0.4989</td></tr>
+<tr><td>A3 Binance only</td><td>1</td><td class="v">14,504</td><td class="v">0.5084</td><td class="v">0.5056</td><td class="v">0.5080</td></tr>
+<tr><td>A3 Binance only</td><td>2</td><td class="v">22,910</td><td class="v">0.5026</td><td class="v">0.4985</td><td class="v">0.4981</td></tr>
+</table></div>
+54–56 % of labelled anchors reach +4 first, yet every AUC is at chance; across all 60 cells of the grid, 0.47–0.54. At 30 s, with far more anchors resolved, the same: 0.4843–0.5075. The question of which variable adds to which never arises.</dd>
+</dl></div>
+
+<dl class="rv">
+<dt>Verdict</dt><dd>Continuation is real and short — about 0.3 bp over a random instant, nine tenths of it within three seconds. Neither Binance flow nor the spread knows its direction: not on crossings, not on flow bursts, and not on departures built from the Binance tape alone.</dd>
+<dt>Next</dt><dd>X1 — the full order book on the same anchors.</dd>
+</dl>
+<p class="note"><strong>Evidence.</strong> <code>artifacts/continuation_v1/</code>: <code>PREREG.md</code>, <code>horizon.json</code>, <code>results_fold1.json</code>, <code>results_fold2.json</code>; <code>EVD-CONTINUATION-NULL</code>, <code>EVD-HORIZON-SELECTED</code>.</p>
+
+<h2><span class="n">R3</span>Best prices on top of the trade tape</h2>
+
+<p>Upstream of the print is the quote. On 87 days of Binance's native bookTicker — best bid, best ask and the quantities at them, per event — R3 asks whether best prices add to the trade tape in predicting <strong>(a)</strong> whether a jump starts and <strong>(b)</strong> which way it goes.</p>
+
+<p><strong>The jump origin.</strong> A jump is an 8 bp move of the mid within a second. Its origin is the extremum of the mid in the second before the first 8 bp crossing. The origin is chosen in hindsight: it can only be identified at the crossing, a median 900 ms later. Leads count back from the origin, and every input is cut at origin − (lead + 15 ms).</p>
+
+<div class="card"><div class="ct">R3·1</div><h4>Is a jump coming?</h4><dl>
+<dt>Question</dt><dd>Do best prices add to the trade tape in predicting that a jump is about to start?</dd>
+<dt>Setup</dt><dd>Jumps against controls matched on trade count; nested models at a 50 ms lead.</dd>
+<dt>Universe</dt><dd>UB: 3,888 jumps with a matched control.</dd>
+<dt>Features</dt><dd>Trade tape → + best bid and ask → + quantities at best prices, bid and ask delivered separately.</dd>
+<dt>Result</dt><dd>AUC 0.595 → 0.669 → 0.680: best prices add +0.085 [+0.061, +0.113], quantities +0.011 [+0.003, +0.018]. The mid's realised volatility over the last 5 s alone scores 0.648. <strong>What best prices add is mostly the volatility regime a jump is born in.</strong></dd>
+</dl></div>
+
+<p><strong>Direction, briefly.</strong> A companion test asks which way a jump goes, using the same nested features and a placebo built by the jump's own rule but without its 8 bp threshold. Best prices add +0.046 AUC to the jump's side at a 50 ms lead, falling to +0.015 by 100 ms and negligible beyond — carried almost entirely by the quote's own price, not its queue. The identical features add more and hold longer on the placebo, which says part of the increment on real jumps is an artefact of what makes something a "jump" at all rather than a directional signal. Both anchors are chosen in hindsight, so neither describes what could have been called in real time. Same conclusion as R2, in a different costume: the book does not resolve direction any earlier than the trade tape does.</p>
+
+<div class="card"><div class="ct">R3·2</div><h4>Enter before the breach, or after it?</h4><dl>
+<dt>Question</dt><dd>With the breach known in advance, does a bid resting ahead of it beat a market order after it?</dd>
+<dt>Setup</dt><dd>A ceiling: the breach time is given. The taker buys the ask once the breach is visible (15 ms if a Binance print made it, 160 ms if a Uniswap price did — 8.9 % of opens) plus 40 ms, rounded up to the grid: 100 or 200 ms. The passive bid rests at the best bid from its lead until that moment; unfilled counts as zero. Exit at the best bid 3 s later.</dd>
+<dt>Universe</dt><dd>U5: 9,817 upward breaches, 61 days, CoinAPI 50 ms grid.</dd>
+<dt>Features</dt><dd>None.</dd>
+<dt>Result</dt><dd><div class="scroll"><table>
+<tr><th>entry</th><th class="v">filled</th><th class="v">gross per attempt at 3 s</th></tr>
+<tr><td>taker after the breach</td><td class="v">—</td><td class="v">+0.06 [−0.33, +0.57]</td></tr>
+<tr><td>bid 20 s ahead</td><td class="v">91 %</td><td class="v">+3.87 [+3.10, +4.71]</td></tr>
+<tr class="hi"><td>bid 10 s ahead</td><td class="v">87 %</td><td class="v">+3.92 [+3.45, +4.26]</td></tr>
+<tr><td>bid 5 s ahead</td><td class="v">82 %</td><td class="v">+3.83 [+3.47, +4.45]</td></tr>
+<tr><td>bid 2 s ahead</td><td class="v">68 %</td><td class="v">+2.95 [+2.69, +3.29]</td></tr>
+<tr><td>bid 1 s ahead</td><td class="v">48 %</td><td class="v">+1.58 [+1.34, +1.89]</td></tr>
+<tr><td>bid 500 ms ahead</td><td class="v">29 %</td><td class="v">+0.66 [+0.46, +0.93]</td></tr>
+<tr><td>bid 50 ms ahead</td><td class="v">12 %</td><td class="v">−0.14 [−0.19, −0.06]</td></tr>
+</table></div>
+<strong>The breach is where the move ends, not where it starts.</strong> About 7 bp arrive in the two seconds around it; after that the mid is flat to 30 s.</dd>
+</dl></div>
+
+<figure>
+<div class="figw"><svg class="fig" viewBox="0 0 720 320" role="img" aria-label="The breach is where the move ends"><title>The breach is where the move ends</title><desc>Mean mid price relative to the mid at the breach, from 10 s before to 30 s after, on a signed square-root time axis, with the filled resting bid and the taker's entry ask marked.</desc><line class="g" x1="56" y1="272.0" x2="700" y2="272.0"/><text class="tk" x="48" y="275.5" text-anchor="end">−6</text><line class="g" x1="56" y1="222.8" x2="700" y2="222.8"/><text class="tk" x="48" y="226.3" text-anchor="end">−4</text><line class="g" x1="56" y1="173.6" x2="700" y2="173.6"/><text class="tk" x="48" y="177.1" text-anchor="end">−2</text><line class="zero" x1="56" y1="124.4" x2="700" y2="124.4"/><text class="tk" x="48" y="127.9" text-anchor="end">0</text><line class="g" x1="56" y1="75.2" x2="700" y2="75.2"/><text class="tk" x="48" y="78.7" text-anchor="end">+2</text><line class="g" x1="56" y1="26.0" x2="700" y2="26.0"/><text class="tk" x="48" y="29.5" text-anchor="end">+4</text><text class="tk" x="56.0" y="288" text-anchor="middle">−10 s</text><text class="tk" x="125.0" y="288" text-anchor="middle">−5 s</text><text class="tk" x="217.2" y="288" text-anchor="middle">−1 s</text><text class="tk" x="291.7" y="288" text-anchor="middle">0 s</text><text class="tk" x="366.3" y="288" text-anchor="middle">+1 s</text><text class="tk" x="420.8" y="288" text-anchor="middle">+3 s</text><text class="tk" x="527.4" y="288" text-anchor="middle">+10 s</text><text class="tk" x="700.0" y="288" text-anchor="middle">+30 s</text><line class="ev" x1="291.7" y1="26" x2="291.7" y2="272"/><text class="dl0" x="297.7" y="36">breach</text><polyline class="l1" points="56.0,239.5 125.0,238.1 186.3,231.3 217.2,212.6 291.7,124.4 366.3,73.9 420.8,68.5 527.4,66.6 625.1,70.0 699.7,72.7"/><circle class="d1" cx="56.0" cy="239.5" r="3"><title>−10.00 s: −4.68 bp</title></circle><circle class="d1" cx="125.0" cy="238.1" r="3"><title>−5.00 s: −4.62 bp</title></circle><circle class="d1" cx="186.3" cy="231.3" r="3"><title>−2.00 s: −4.34 bp</title></circle><circle class="d1" cx="217.2" cy="212.6" r="3"><title>−1.00 s: −3.58 bp</title></circle><circle class="d1" cx="291.7" cy="124.4" r="3"><title>0 s: 0 bp</title></circle><circle class="d1" cx="366.3" cy="73.9" r="3"><title>+1.00 s: +2.05 bp</title></circle><circle class="d1" cx="420.8" cy="68.5" r="3"><title>+3.00 s: +2.27 bp</title></circle><circle class="d1" cx="527.4" cy="66.6" r="3"><title>+10.00 s: +2.35 bp</title></circle><circle class="d1" cx="625.1" cy="70.0" r="3"><title>+20.00 s: +2.21 bp</title></circle><circle class="d1" cx="699.7" cy="72.7" r="3"><title>+29.95 s: +2.10 bp</title></circle><circle class="d2" cx="56.0" cy="188.2" r="4.5"><title>bid resting 10 s ahead, filled: −2.60 bp</title></circle><text class="dl0" x="65.0" y="204.2">filled bid, 10 s ahead: −2.60</text><circle class="d0" cx="315.3" cy="80.1" r="4.5"><title>taker ask at entry: +1.80 bp</title></circle><text class="dl0" x="324.3" y="98.1">taker ask after the breach: +1.80</text><text class="axl" x="60" y="14">bp from the mid at the breach</text><text class="axl" x="378" y="312" text-anchor="middle">time from the breach (signed square-root axis)</text></svg></div>
+<p class="leg"><span class="k1"><i></i>mean mid</span><span class="k2"><i></i>resting bid, filled</span><span class="k0"><i></i>taker entry</span></p>
+<figcaption>R3·2. The mid rises +1.09 bp from −10 s to −1 s, +3.58 in the last second and +2.05 in the next, then holds near +2.10 to 30 s. U5, 9,817 breaches. Source: <code>artifacts/preentry_maker_ceiling_v1/audit_2026-09-14/maker_path.json</code>.</figcaption>
+</figure>
+
+<dl class="rv">
+<dt>Verdict</dt><dd>Best prices add to the trade tape, but not at a moment a decision can use. What they add to imminence is mostly the volatility regime; the side sits in the quote's own price and fades before the origin is even identifiable; the breach closes the move — a taker entering after it earns +0.06 bp at 3 s, a bid resting 10 s ahead +3.92.</dd>
+<dt>What flips it</dt><dd>X1 and X2 — the full order book, at CoinAPI's 100 ms frames.</dd>
+</dl>
+<p class="note"><strong>Evidence.</strong> <code>artifacts/lob_precursor_v1/c1c2/results_c2.json</code> and <code>audit_2026-09-14/</code> (placebo); <code>artifacts/preentry_maker_ceiling_v1/audit_2026-09-14/maker_path.json</code>; <code>EVD-LOB-PRECURSOR</code>.</p>
+
+<h2><span class="n">R4</span>After entry</h2>
+
+<p>Most of the programme's effort went below the last rung: a position exists, and the question is when to leave it. Two results carry this section. Two more things turned out, on inspection, to be about the programme's own instruments rather than about the market — a pre-entry gate that had drifted off the score it was cutting, and a book measured only through ratios that understated what it knew — and are in the defect register with the rest of that kind of finding.</p>
+
+<div class="card"><div class="ct">R4·1</div><h4>Can an exit rule beat holding?</h4><dl>
+<dt>Question</dt><dd>With a position open, can a rule that decides within 30 s exit better than holding to 30 s?</dd>
+<dt>Setup</dt><dd>Entry 40 ms after the open, at the last print; 50 ms decision grid, 600 ticks; baseline π0 = hold to 30 s. Statistic: gross difference against π0, day bootstrap.</dd>
+<dt>Universe</dt><dd>U3 for setups 1–5 (folds 2–4 out of fold); U5 for setup 6.</dd>
+<dt>Features</dt><dd>Twenty state features: current return; share of the 30 s elapsed; Binance return over 200 ms, 1 s, 5 s; the spread and its 1 s change; signed volume 1 s and 5 s, volume 1 s, trade count 1 s and 5 s, signed-volume share 1 s; Uniswap swaps since entry, a swap flag, time since the first swap; running maximum and minimum, drawdown, run-up. Setups 3–5 add the gate score; setup 5 adds nine spread-mechanics columns; setup 6 uses a 546-column bank.</dd>
+<dt>Result</dt><dd><div class="scroll"><table>
+<tr><th>#</th><th>setup</th><th>model</th><th>against π0, bp</th></tr>
+<tr><td>1</td><td>optimal stopping π3</td><td>random forest</td><td>−0.13 [−0.68, +0.37]</td></tr>
+<tr><td>2</td><td>take-profit ladder, 5–25 bp</td><td>none</td><td>−0.80 … −0.96, every interval below zero</td></tr>
+<tr><td>3</td><td>first touch of +5 or −10 bp</td><td>random forest</td><td>AUC 0.61 on all ticks, 0.52 on the ticks the policy acts on; −0.36 [−1.05, +0.26]. Changing the barriers relabels ≤ 4.7 % of episodes</td></tr>
+<tr><td>4</td><td>advantage of waiting</td><td>random forest</td><td>Spearman −0.001 on 10.45 m ticks; P(advantage &lt; 0) ≈ 0.5 in every decile</td></tr>
+<tr><td>5</td><td>Bellman iteration</td><td>LightGBM</td><td>in sample +4.23; out of fold −0.22 [−0.99, +0.50]</td></tr>
+<tr><td>6</td><td>class routing</td><td>TCN</td><td>+22.3 / +21.2 on falling classes, −18.1 / −17.6 on rising; net +1.03, interval through zero</td></tr>
+</table></div>
+A perfect exit adds C = 9.254 bp over holding; a blind exit costs F = 9.483. A rule that catches every exit-worthy path beats holding only above 51 % precision. The best trained family reached 39 %.</dd>
+</dl></div>
+
+<div class="card"><div class="ct">R4·2</div><h4>When do paths become distinguishable?</h4><dl>
+<dt>Question</dt><dd>How early after entry can an episode's class be told apart? Classes sort each episode by its price path after entry, at 5 and 10 bp.</dd>
+<dt>Universe</dt><dd>U5 and fold-1/fold-2 cohorts, per row.</dd>
+<dt>Result</dt><dd><div class="scroll"><table>
+<tr><th>study</th><th>universe</th><th>model</th><th>result</th></tr>
+<tr><td>class mean paths</td><td>fold 1</td><td>none</td><td>at +2 s all five within 0.67 bp (1.92 … 2.59); apart only after 10 s</td></tr>
+<tr><td>recognition against the class oracle</td><td>fold 1</td><td>—</td><td>at 8 s captures +0.0398 bp of +11.15 [9.97, 11.94]</td></tr>
+<tr><td>four feature banks</td><td>fold 1, 7,853 episodes</td><td>TCN</td><td>exit-or-hold AUC at 8 s: 0.516–0.521</td></tr>
+<tr><td>sequential baseline</td><td>fold 1</td><td>LightGBM</td><td>AUC 0.576 at 6 s — it reads the spread regime, not the sequence</td></tr>
+<tr><td>sequence against trees</td><td>fold 2, 9,244 pairs</td><td>TCN, LightGBM</td><td>0.5720 against 0.5803; path-only trees 0.5766</td></tr>
+<tr><td>network tuning</td><td>fold 1</td><td>TCN, 192 fits</td><td>AUC range across the grid 0.0064</td></tr>
+<tr><td>feature capacity</td><td>fold 1, in sample</td><td>exit rule, 629 features</td><td>2.08 of 9.12 bp of the class oracle, 21 %, measured on the training data</td></tr>
+</table></div>
+<strong>Classes become distinguishable after the tradeable move is over.</strong></dd>
+</dl></div>
+
+<dl class="rv">
+<dt>Verdict</dt><dd>No exit rule beat holding to 30 s: every interval contains zero or lies below it. Paths become distinguishable only after the tradeable move is over. Elsewhere in this section, an apparent collapse in the entry cohort and an apparent silence from the order book both turned out to be measurement artefacts, not market facts — see the defect register.</dd>
+<dt>What flips it</dt><dd>X1 and X2.</dd>
+</dl>
+<p class="note"><strong>Evidence.</strong> <code>EVD-C24</code>, <code>EVD-C14</code>, <code>EVD-C17</code>, <code>EVD-C20</code>, <code>EVD-C21</code>; <code>LGR-ARC-260710-BELLMAN-V2</code>, <code>LGR-ARC-260720-MORPH-T015</code>, <code>db/source/30-ledger/CHRONOLOGY/260719-lgbm-baseline.md</code>; <code>artifacts/continuation_v1/gate_diagnostic.md</code>; <code>artifacts/postentry_optstop_v1/audit_2026-09-14/</code>.</p>
+
+<h2><span class="n">R5</span>Liquidations: upstream of the flow</h2>
+
+<p>Upstream of taker flow sit positions. A liquidation is a forced market order, and forced orders gather where leveraged positions break. If that structure is visible, it could say where and when the next move comes — and unlike everything above, it comes with a side attached by construction. Four cards follow the chain from the event back to the positions behind it.</p>
+
+<div class="card"><div class="ct">R5·1</div><h4>Does the price continue after a liquidation?</h4><dl>
+<dt>Question</dt><dd>Does the price continue further after a liquidation than after an ordinary move of the same size at the same volatility?</dd>
+<dt>Setup</dt><dd>Entry at <code>T</code> + 1 s — Binance publishes a forced order up to about a second after the trade. Impulse = price change from 1 s before to 1 s after entry; continuation = move in the impulse's direction from entry. Controls matched on impulse size (6 bins) × previous-minute volatility (8 bins) × variance-rate tercile; weights by event composition; 1,000 day-bootstrap replicates.</dd>
+<dt>Universe</dt><dd>UL. Event size is the notional of the minute's first order, known at entry; top decile ≥ $13,669 (1,971 events).</dd>
+<dt>Result</dt><dd><div class="scroll"><table>
+<tr><th>horizon</th><th class="v">all events</th><th class="v">top decile</th></tr>
+<tr><td>2 s</td><td class="v">+0.07 [+0.02, +0.13]</td><td class="v">−0.02 [−0.15, +0.12]</td></tr>
+<tr class="hi"><td>3 s</td><td class="v">+0.09 [+0.01, +0.18]</td><td class="v">+0.06 [−0.14, +0.26]</td></tr>
+<tr><td>10 s</td><td class="v">+0.09 [−0.11, +0.34]</td><td class="v">−0.17 [−0.60, +0.30]</td></tr>
+<tr><td>60 s</td><td class="v">+0.40 [+0.08, +0.76]</td><td class="v">−0.49 [−1.36, +0.42]</td></tr>
+<tr><td>300 s</td><td class="v">+1.18 [+0.43, +1.96]</td><td class="v">+1.07 [−0.44, +2.80]</td></tr>
+</table></div>
+Continuation is real across all liquidations — weak, but clear of zero out to 300 s — and not confirmed on the largest ones alone. Either way, <strong>the move comes before the forced order.</strong> In the 5–2 s before the trade the variance rate is 15.1 bp²/s against 0.82 for controls; over the preceding 10 s the price travels 9.16 bp against 1.90.</dd>
+</dl></div>
+
+<div class="card"><div class="ct">R5·2</div><h4>Open interest and flow before a breach</h4><dl>
+<dt>Question</dt><dd>Does a breach on a background of known liquidations run more often on closing risk than a breach on a quiet background?</dd>
+<dt>Setup</dt><dd>Background = liquidations with trade time between the end of the last closed 5-minute open-interest interval and the breach, known by then (<code>T</code> + 1 s ≤ breach), cut at the median non-zero notional. Measure: share of breaches with falling open interest, and with net selling flow, over that last closed interval; 2,000 day-bootstrap replicates. Second step: match on the direction and size of the Binance move over the same interval.</dd>
+<dt>Universe</dt><dd>UH.</dd>
+<dt>Result</dt><dd>Falling open interest: 61.5 % against 54.0 %, +7.4 pp [−2.9, +14.3], not separated. Net selling flow: 70.6 % against 54.8 %, +15.8 pp [+10.8, +21.6] — after matching on the price move, +3.8 pp [−0.9, +9.9]. Before liquidation-background breaches the price had fallen a median −32 bp against −4 bp. <strong>The price fell and the tape sold: nothing beyond the move itself.</strong></dd>
+</dl></div>
+
+<div class="card"><div class="ct">R5·3</div><h4>A map of liquidation levels</h4><dl>
+<dt>Question</dt><dd>Does a map of where liquidations cluster say when the next breach comes, and where forced orders land?</dd>
+<dt>Setup</dt><dd><strong>Timing:</strong> notional-weighted density of executed liquidation prices over the previous 1, 3 or 7 days, 5 bp bins, per side; a cluster is a bin above the day's 90th percentile. Input: distance from the price to the nearest cluster on each side, every 10 s; target: time to the next breach in that direction; control: another day's map re-anchored to today's price; decided on fold 2.
+<br><strong>Resolution:</strong> levels built from open-interest growth — each 5-minute interval with rising interest places entries at its VWAP, at leverage 10 / 25 / 50 / 100× with equal weights.
+<br><strong>Placement:</strong> share of real liquidation notional landing in the map's top 10 % of bins, against a three-day volume profile with equal coverage.</dd>
+<dt>Universe</dt><dd>UM and UL; fold 2 (47 days) for timing, 191 days for placement.</dd>
+<dt>Result</dt><dd><strong>Timing:</strong> all 12 intervals against the control contain zero. "Near a cluster the breach takes longer" (Spearman to −0.24) is reproduced by a foreign day's map (to −0.18).
+<br><strong>Resolution:</strong> the band of levels from one entry spans a median 974 bp for longs and 874 bp for shorts, against 62.5 bp between clusters — 14–16 times wider; 98 % of the width comes from unknown leverage.
+<br><strong>Placement:</strong> +1.5 pp [−1.1, +4.0] over the volume profile.</dd>
+</dl></div>
+
+<div class="card"><div class="ct">R5·4</div><h4>Erasing levels the price has already crossed</h4><dl>
+<dt>Question</dt><dd>If levels the price has traversed are erased — those positions are already gone — does the map place liquidations better?</dd>
+<dt>Setup</dt><dd>A map built at 00:00 UTC from open-interest bricks of the previous N = 1 / 3 / 7 days. Erasure: longs above the lowest price since the brick, shorts below the highest. Decay exp(−λ·age), with λ the voluntary exit rate on fold 1 (0 / 0.0055 / 0.051 per hour). Leverage weights: equal, or tilted by the sign of accounts-versus-money positioning, or the reverse. 90 cells. Zone A is inside the three-day traded range; zone B runs beyond it to the deepest reachable level. Controls: uniform marking and a foreign period's map. Fold 2 decides; 187 days as a second reading.</dd>
+<dt>Universe</dt><dd>UM, UL.</dd>
+<dt>Result</dt><dd>Effect of erasure — zone B: −0.40 pp [−1.45, +0.43] on fold 2, −1.32 [−2.08, −0.70] on 187 days; zone A: −3.78 [−7.45, −0.21] and −2.36 [−4.27, −0.37]. Decay helps (λ = 0.0055 against none: +2.13 [+0.31, +4.14]); the positioning tilt does not (−1.82 [−10.9, +6.7]; its reverse +3.21 [−3.2, +10.8]). The mechanism shows why: 99.8 % of erasure falls inside the traded range, and new entries refill the erased mass — 39–48 % within a day, 61–81 % within a week. <strong>What works is the freshness of entries, not the structure of leverage.</strong></dd>
+</dl></div>
+
+<dl class="rv">
+<dt>Verdict</dt><dd>Continuation after a liquidation is real but weak and slow — the amplitude exists, it just does not arrive fast enough to act on after the largest events alone. What precedes a liquidation-background breach — falling interest, selling flow — restates the price move rather than adding to it. The level map built here fixed leverage at 10–100× with equal weights and was rebuilt once a day: it does not time a breach, it places liquidations no better than a volume profile, and erasing crossed levels does not improve it.</dd>
+<dt>Next</dt><dd>Cheng, Deng, Wang and Yu (2021) estimate from BitMEX daily data that liquidated positions carry leverage of at least about 60× on average — the top of the range weighted equally here. The open plan replaces the density of levels with the probability of reaching one:</dd>
+</dl>
+
+<div class="scroll"><table>
+<tr><th></th><th>level map — run</th><th>reach probability — open (X4)</th></tr>
+<tr><td>object</td><td>density of liquidation levels</td><td>probability of reaching a level</td></tr>
+<tr><td>output</td><td>where</td><td>when, and with what probability</td></tr>
+<tr><td>leverage</td><td>fixed, 10–100× equal weights</td><td>estimated from data, weighted to high leverage</td></tr>
+<tr><td>boundary</td><td>static</td><td>drifts with funding</td></tr>
+<tr><td>positions leaving</td><td>one decay constant</td><td>a rate that depends on market state</td></tr>
+<tr><td>trigger</td><td>trade price</td><td>mark price</td></tr>
+<tr><td>test</td><td>liquidation notional in marked bins</td><td>calibration and resolution</td></tr>
+</table></div>
+<p class="note"><strong>Evidence.</strong> <code>artifacts/liquidation_reversion_v1/audit_2026-09-14/</code> (<code>p12</code>, <code>p22</code>–<code>p24</code>, <code>x3_*</code>); <code>artifacts/breach_binance_flow_v1/audit_2026-09-14/</code> (<code>p15</code>–<code>p17</code>); <code>DEF-F035</code>, <code>DEF-F036</code>; Cheng et al., arXiv:2102.04591.</p>
+
+<h2><span class="n">R6</span>What is being recorded, and for which open question</h2>
+
+<p>Every stream in the operator's recorder answers a question this programme could not test on the data it had. The recorder has run since 2026-08-03.</p>
+
+<div class="scroll"><table>
+<tr><th>open question</th><th>data</th><th>state</th></tr>
+<tr><td>The book and forced liquidations below 100 ms, where the current vendor tape cannot resolve order</td><td>futures <code>@bookTicker</code>, <code>@depth@0ms</code> (WS 10, 11)</td><td>recorded</td></tr>
+<tr><td>Liquidation cascades with side and event time</td><td><code>!forceOrder@arr</code> — at most one order per symbol per second</td><td>planned</td></tr>
+<tr><td>Is the trigger armed: mark price against contract price before a liquidation</td><td><code>@markPrice@1s</code> (WS 13) together with <code>!forceOrder@arr</code></td><td>mark recorded; high priority</td></tr>
+<tr><td>Did a move open new risk or close old risk</td><td><code>metrics</code> archive, 5 min, from 2024-01-04; finer snapshots via REST 47</td><td>on disk</td></tr>
+<tr><td>Positioning: many small accounts or few large ones</td><td><code>metrics</code> archive; REST 49–52</td><td>on disk</td></tr>
+<tr><td>Funding</td><td>REST 53, full history</td><td>available</td></tr>
+<tr><td>Spot–perp basis: derivative-led against index-led moves</td><td>spot trades archive from 2018-12-15; spot quote and book (WS 22, 23); index constituents (REST 54, current only)</td><td>recorded</td></tr>
+<tr><td>Uniswap-only shape features</td><td>the swap tape</td><td>on disk, never tested</td></tr>
+</table></div>
+
+<dl class="rv">
+<dt>Verdict</dt><dd>Every stream is tied to a question above or to confirming a book result. Four things cannot be recovered later: liquidations with their side; per-event quotes and book between 2024-03-30 and 2026-08-03; mark price finer than a minute; open-interest snapshots finer than five minutes. Each channel keeps a record of its own gaps, because a silent channel looks exactly like a quiet market.</dd>
+</dl>
+<p class="note"><strong>Evidence.</strong> <code>audits/binance_grid_audit/</code>; <code>audits/binance_grid_audit/metrics_check_2026-09-14/</code>; <code>LGR-STALENESS-TAPES</code>.</p>
+
+<h2><span class="n">X</span>Open experiments</h2>
+
+<p>The book branch runs from fewer inputs to more: R2 (no book) → R3 (best prices) → X1 (full book) → X2. Its book features take four views of each price band at 1, 2, 4 and 8 bp: how much rests there, how it is distributed, how it changes and why, and the pressure against it. Sixty-three CoinAPI days are a single market regime, so a book signal found there is confirmed on a second period of the operator's own recorder, under a rule written before X1's first number.</p>
+
+<div class="card"><div class="ct">X1</div><h4>The full book and continuation</h4><dl>
+<dt>Question</dt><dd>Does the full order book add to R2's prediction of continuation?</dd>
+<dt>Setup</dt><dd>R2 unchanged — anchors A1–A3, label +X before −Y, day blocks — plus book features at each anchor's decision instant. Arms: common + flow + spread against the same with the book, and common + book alone; a control on the same days without the book. Tuned on fold 1, tested on fold 2.</dd>
+<dt>Universe</dt><dd>UA on CoinAPI days: fold 1, 63 days; fold 2, 47 days.</dd>
+<dt>Features</dt><dd>R2's bank + nine book features per band.</dd>
+</dl></div>
+
+<div class="card"><div class="ct">X2</div><h4>The full book and the next breach</h4><dl>
+<dt>Question</dt><dd>Does the full book predict how soon the next upward and the next downward breach come?</dd>
+<dt>Setup</dt><dd>Two targets, one per direction; resistance is the asks for a breach up and the bids for a breach down.</dd>
+<dt>Universe</dt><dd>Fold 1, a continuous 10 s grid, 63 days.</dd>
+<dt>Features</dt><dd>The same nine book features per band.</dd>
+</dl></div>
+
+<p class="note">X1 and X2 ask whether the full book adds anything to continuation or to breach timing — both currently null on the trade tape and on best prices alone. X4, at the end of the liquidations section, asks the question this programme is actually organised around: whether a probability of reaching a level, with leverage estimated from data rather than assumed, is where the direction missing since R2 finally shows up.</p>
+
+<h2><span class="n">A</span>Defect register</h2>
+
+<p>A good part of this programme's time was self-auditing rather than research. Every entry below was caught by checking a result against an independent reconstruction of the same number — an acceptance gate on a tape rebuild, an out-of-fold replay of an entry threshold, a bit-exact model refit — not by inspection. Three shapes recur often enough to name, and they group the register below: features encoded as ratios that quietly threw away the size of what they measured; clocks and selection rules that let a model see, or be scored on, information it would not have had live; and vendor tapes that resell a slower product than they advertise. None of the entries below changed a headline verdict in this report — each is either repaired, bounded, or shown not to move the conclusion it touches — but each is a specific, checkable claim about where this programme's own instruments could have lied to it, which is the standard the rest of its numbers are held to.</p>
+
+<h3>Feature saturation</h3>
+<div class="scroll"><table>
+<tr><th>defect</th><th>what it does</th><th>results on it</th><th>treatment</th></tr>
+<tr><td><strong>Ratios in models</strong></td><td>a signed quantity divided by its own magnitude saturates at ±1 on short windows and discards size — the largest single source of understated results in this programme</td><td>every model on the original 51-column U2 feature set; the 546-column book bank in R4's setup 6</td><td>de-ratioing Binance flow recovered +0.0014 AUC (R1); de-ratioing the order book's queue recovered +0.011 AUC on imminence and flipped its verdict from "no precursor" to a small real one (R3). Not recomputed everywhere the pattern appears</td></tr>
+<tr><td><strong>Degenerate inputs</strong></td><td>a forest's score-based feature is constant within a fold; 156 of 546 bank columns are ≥ 50 % zeros, with missing values set to zero and no flag to say so</td><td>R4·1</td><td>a bound on setups 1 and 6, not a repair</td></tr>
+</table></div>
+
+<h3>Measurement and selection</h3>
+<div class="scroll"><table>
+<tr><th>defect</th><th>what it does</th><th>results on it</th><th>treatment</th></tr>
+<tr><td><strong>Tie order</strong> <code>DEF-F034</code></td><td>the signed tape was written ordered by time only; 46.7 % of 354 m rows contradicted the exchange's trade id, so "last print" inside a millisecond was arbitrary</td><td>R1·3, R4</td><td>repaired 2026-09-08; R1 re-run bit-identical; R2, R3, R5 built after the repair; R1·3 and R4 predate it and were not recomputed</td></tr>
+<tr><td><strong>Gate drift</strong></td><td>the entry threshold was an absolute bar set from expanding history while the score it cut drifted down; supply held (17,988 → 19,207 episodes a month) and every fold's top-decile lift stayed clear of zero (+15.4 to +10.6 bp), but by 2025-08 the bar passed only 96 of 22,844 episodes</td><td>the fold-3/fold-4 entry counts (3,983, 1,403) read as "the market closed"</td><td>diagnosed 2026-09; a re-gated replay was not run — the shrinking cohort is evidence about the threshold, not the opportunity</td></tr>
+<tr><td><strong>Clock of A1 and U2</strong></td><td>every A1 crossing and every U2 entry becomes usable 160 ms after the crossing, including crossings a Binance print made (usable at 15 ms)</td><td>R2 (A1), R4</td><td>not recomputed: A2 and A3 run on the rule and give the same result; the deviation only delays entry. U2 rebuilt on this clock moves the target −0.211 bp on 64.3 % of episodes</td></tr>
+<tr><td><strong>Decision clock after entry</strong></td><td>R4's exit features see Binance trades without the 15 ms and the spread and swaps without the 160 ms</td><td>R4·1</td><td>not recomputed: the look-ahead favours the models, and they stayed null</td></tr>
+<tr><td><strong>Selection on the future</strong></td><td><code>quality_flagged</code> drops an episode if Binance trading paused for more than 2 s at any point before it closed; it removes 22.9 % of episodes and shifts levels (30 s maximum excursion 7.98 → 9.09 bp)</td><td>R4</td><td>not recomputed; X1 and X2 flag an episode only if the quote stops updating for more than 60 s</td></tr>
+<tr><td><strong>Exit price</strong></td><td>exits at the last print, not the best bid</td><td>R4·1</td><td>bid–ask median 0.03 bp, p99 0.89 — bound, not repaired</td></tr>
+<tr><td><strong>Detector labels</strong> <code>DEF-F017</code></td><td>features over a 10 s bucket, label from the bucket start</td><td>the breach-detector work behind R4·2</td><td>repaired: decision moved to bucket close, AUC 0.991 → 0.988</td></tr>
+</table></div>
+
+<h3>Vendor and data limits</h3>
+<div class="scroll"><table>
+<tr><th>defect</th><th>what it does</th><th>results on it</th><th>treatment</th></tr>
+<tr><td><strong>100 ms book</strong> <code>DEF-F032</code>, <code>DEF-F020</code></td><td>CoinAPI resells Binance's <code>@depth@100ms</code>; its BBO is the top of the same frames, so the two tapes are one</td><td>R3·2, R4 (setup 6)</td><td>bound: a null through a 100 ms filter cannot tell absent signal from signal under 100 ms</td></tr>
+<tr><td><strong>Liquidation stamp</strong> <code>DEF-F035</code></td><td>CoinAPI's <code>time_open</code> trails the trade by more than 1 s on 20.6 % of bars</td><td>R1·1 background split, R5·1, R5·2</td><td>recomputed from the trade time <code>T</code></td></tr>
+<tr><td><strong>Zero OI snapshots</strong> <code>DEF-F036</code></td><td>zero readings in the <code>metrics</code> archive</td><td>R5·3, R5·4</td><td>dropped before differencing</td></tr>
+<tr><td><strong>Taker side</strong> <code>DEF-F033</code></td><td>the aggressor side was dropped at ingest</td><td>—</td><td>recovered into <code>binance_trades_signed</code></td></tr>
+</table></div>
+
+<p class="foot">
+Sources: the evidence lines under each rung point to run folders in <code>artifacts/</code> and chunks in <code>db/source/</code>; the audit behind this edition is <code>db/handoff/review-rev8-audit-2026-09-13.md</code>.<br>
+External: Wu, Sui, Thiery &amp; Pai, <a href="https://arxiv.org/abs/2507.13023">arXiv:2507.13023</a>; Cheng, Deng, Wang &amp; Yu, <em>Liquidation, leverage and optimal margin in bitcoin futures markets</em>, Applied Economics 53 (2021), <a href="https://arxiv.org/abs/2102.04591">arXiv:2102.04591</a>.<br>
+Figures are drawn to scale from the result files named in their captions; no plotted value is typed by hand.<br>
+Holdout: 2025-09 onward sealed and unread. R2's fold 2 was scored once.
+</p>
+
+</div>
+</body>
+</html>
